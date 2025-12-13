@@ -1,19 +1,20 @@
-import Video from 'react-native-video';
-import { MaterialIcons } from '@react-native-vector-icons/material-icons';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { ActivityIndicator, IconButton } from 'react-native-paper';
-import { InfoCard, SkeletonInfoCard } from '../components';
+import {
+  InfoCard,
+  MiniVideoContainer,
+  ModalFullVideo,
+  SkeletonInfoCard,
+} from '../components';
 import { useDetailsCountry } from '../hooks';
 import {
   BodyText,
   colors,
-  LabelText,
   RootStackMainParams,
   StandardWrapper,
   TitleText,
 } from '../../../shared';
-import { useRef } from 'react';
 
 const iconMapping = {
   countryCode: 'tag',
@@ -31,10 +32,9 @@ interface Props extends StackScreenProps<RootStackMainParams, 'Details'> {}
 
 export const DetailsScreen = ({ route, navigation }: Props) => {
   const { code } = route.params;
-  const progressBarRef = useRef<View>(null);
 
   const {
-    //state
+    // state
     singleCountry,
     isLoading,
     isBuffering,
@@ -45,33 +45,21 @@ export const DetailsScreen = ({ route, navigation }: Props) => {
     selectedVideo,
     videoRef,
     isSeeking,
-    //handlers
+    isFullscreen,
+    showControls,
+    progressBarRef,
+    fullscreenProgressBarRef,
+    //functions
     formatTime,
-    handlePlayPause,
     handleLoad,
     handleProgress,
     handleBuffer,
-    handleSeek,
     handleSeekComplete,
+    handleProgressBarPress,
+    toggleFullscreen,
+    handleVideoPress,
+    handleScreenTouch,
   } = useDetailsCountry({ code });
-
-  const handleProgressBarPress = (event: any) => {
-    if (!progressBarRef.current) return;
-
-    progressBarRef.current.measure((_x, _y, width, _height, _pageX, _pageY) => {
-      const { locationX } = event.nativeEvent;
-      const progress = Math.max(0, Math.min(1, locationX / width));
-      console.log(
-        'Touch at:',
-        locationX,
-        'Width:',
-        width,
-        'Progress:',
-        progress,
-      );
-      handleSeek(progress);
-    });
-  };
 
   return (
     <StandardWrapper>
@@ -101,109 +89,27 @@ export const DetailsScreen = ({ route, navigation }: Props) => {
         {isLoading ? (
           <SkeletonVideoPlayer />
         ) : (
-          <View style={styles.videoContainer}>
-            <Video
-              ref={videoRef}
-              source={{
-                uri: selectedVideo.uri,
-                // BufferConfig movido aquí (no deprecated)
-                bufferConfig: {
-                  minBufferMs: 15000,
-                  maxBufferMs: 50000,
-                  bufferForPlaybackMs: 2500,
-                  bufferForPlaybackAfterRebufferMs: 5000,
-                },
-              }}
-              style={styles.video}
-              paused={!isPlaying}
-              onLoad={handleLoad}
-              onProgress={handleProgress}
-              onBuffer={handleBuffer}
-              onSeek={handleSeekComplete}
-              resizeMode="contain"
-              progressUpdateInterval={250}
-              playInBackground={false}
-              playWhenInactive={false}
-            />
-
-            {/* Overlay de controles */}
-            <Pressable style={styles.videoOverlay} onPress={handlePlayPause}>
-              {isBuffering || isSeeking ? (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="large" color={colors.onPrimary} />
-                  {isSeeking && (
-                    <BodyText
-                      size="small"
-                      color={colors.onPrimary}
-                      style={styles.seekingText}
-                    >
-                      Seeking...
-                    </BodyText>
-                  )}
-                </View>
-              ) : (
-                <View style={styles.playPauseContainer}>
-                  <MaterialIcons
-                    name={isPlaying ? 'pause' : 'play-arrow'}
-                    size={60}
-                    color={colors.onPrimary}
-                  />
-                  <BodyText
-                    size="small"
-                    color={colors.onPrimary}
-                    style={styles.videoLabel}
-                  >
-                    {selectedVideo.title}
-                  </BodyText>
-                </View>
-              )}
-            </Pressable>
-
-            {/* Barra de progreso y controles */}
-            <View style={styles.progressContainer}>
-              <Pressable
-                ref={progressBarRef}
-                style={styles.progressBar}
-                onPress={handleProgressBarPress}
-              >
-                <View
-                  style={[
-                    styles.progressFill,
-                    { width: `${progressPercentage}%` },
-                  ]}
-                />
-                <View
-                  style={[
-                    styles.progressThumb,
-                    { left: `${progressPercentage}%` },
-                  ]}
-                />
-              </Pressable>
-
-              <View style={styles.timeContainer}>
-                <LabelText size="small" color={colors.onPrimary}>
-                  {formatTime(currentTime)}
-                </LabelText>
-                <LabelText size="small" color={colors.onPrimary}>
-                  /
-                </LabelText>
-                <LabelText size="small" color={colors.onPrimary}>
-                  {formatTime(duration)}
-                </LabelText>
-              </View>
-
-              <IconButton
-                icon="fullscreen"
-                iconColor={colors.onPrimary}
-                size={20}
-                style={styles.fullscreenButton}
-                onPress={() => {
-                  // Implementar fullscreen si es necesario
-                  console.log('Fullscreen pressed');
-                }}
-              />
-            </View>
-          </View>
+          <MiniVideoContainer
+            duration={duration}
+            videoRef={videoRef}
+            isPlaying={isPlaying}
+            isSeeking={isSeeking}
+            currentTime={currentTime}
+            isBuffering={isBuffering}
+            showControls={showControls}
+            isFullscreen={isFullscreen}
+            selectedVideo={selectedVideo}
+            progressBarRef={progressBarRef}
+            progressPercentage={progressPercentage}
+            formatTime={formatTime}
+            handleLoad={handleLoad}
+            handleBuffer={handleBuffer}
+            handleProgress={handleProgress}
+            handleVideoPress={handleVideoPress}
+            toggleFullscreen={toggleFullscreen}
+            handleSeekComplete={handleSeekComplete}
+            handleProgressBarPress={handleProgressBarPress}
+          />
         )}
 
         <View style={styles.infoSection}>
@@ -280,6 +186,29 @@ export const DetailsScreen = ({ route, navigation }: Props) => {
           </View>
         </View>
       </ScrollView>
+
+      <ModalFullVideo
+        videoRef={videoRef}
+        duration={duration}
+        isPlaying={isPlaying}
+        isSeeking={isSeeking}
+        currentTime={currentTime}
+        isBuffering={isBuffering}
+        showControls={showControls}
+        isFullscreen={isFullscreen}
+        selectedVideo={selectedVideo}
+        progressPercentage={progressPercentage}
+        fullscreenProgressBarRef={fullscreenProgressBarRef}
+        handleLoad={handleLoad}
+        formatTime={formatTime}
+        handleBuffer={handleBuffer}
+        handleProgress={handleProgress}
+        handleVideoPress={handleVideoPress}
+        toggleFullscreen={toggleFullscreen}
+        handleScreenTouch={handleScreenTouch}
+        handleSeekComplete={handleSeekComplete}
+        handleProgressBarPress={handleProgressBarPress}
+      />
     </StandardWrapper>
   );
 };
@@ -326,78 +255,20 @@ const styles = StyleSheet.create({
     aspectRatio: 16 / 9,
     position: 'relative',
   },
-  video: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    bottom: 0,
-    right: 0,
-  },
   videoSkeletonLoader: {
     position: 'absolute',
     top: '50%',
     left: '50%',
     transform: [{ translateX: -25 }, { translateY: -25 }],
   },
-  videoOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-  },
-  playPauseContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  videoLabel: {
-    marginTop: 8,
-  },
-  progressContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  progressBar: {
-    flex: 1,
-    height: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: 2,
+  skeletonShimmer: {
+    overflow: 'hidden',
     position: 'relative',
   },
-  progressFill: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    backgroundColor: colors.primary,
-    borderRadius: 2,
-  },
-  progressThumb: {
-    position: 'absolute',
-    top: '50%',
-    width: 12,
+  skeletonText: {
     height: 12,
-    backgroundColor: colors.onPrimary,
-    borderRadius: 6,
-    transform: [{ translateX: -6 }, { translateY: -6 }],
-  },
-  timeContainer: {
-    flexDirection: 'row',
-    gap: 4,
-  },
-  fullscreenButton: {
-    margin: 0,
+    backgroundColor: colors.outline,
+    borderRadius: 4,
   },
   infoSection: {
     backgroundColor: colors.surface,
@@ -413,21 +284,5 @@ const styles = StyleSheet.create({
   },
   infoCards: {
     gap: 16,
-  },
-  skeletonShimmer: {
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  skeletonText: {
-    height: 12,
-    backgroundColor: colors.outline,
-    borderRadius: 4,
-  },
-  loadingContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  seekingText: {
-    marginTop: 8,
   },
 });

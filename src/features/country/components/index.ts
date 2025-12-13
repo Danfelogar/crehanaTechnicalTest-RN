@@ -4,5 +4,7 @@ export * from './EmptyState';
 export * from './FiltersSelectorHome';
 export * from './HeaderHome';
 export * from './InfoCard';
+export * from './MiniVideoContainer';
+export * from './ModalFullVideo';
 export * from './RenderLoadingSkeleton';
 export * from './SearchInput';

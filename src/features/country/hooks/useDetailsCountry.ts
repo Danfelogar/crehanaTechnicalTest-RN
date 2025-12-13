@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useCountriesStore, VIDEO_SOURCES } from '../../../shared';
 import { OnLoadData, OnProgressData, VideoRef } from 'react-native-video';
+import { View } from 'react-native';
 
 interface Props {
   code: string;
@@ -13,10 +14,14 @@ export const useDetailsCountry = ({ code }: Props) => {
   const [duration, setDuration] = useState(0);
   const [isBuffering, setIsBuffering] = useState(true);
   const [isSeeking, setIsSeeking] = useState(false);
-
+  const progressBarRef = useRef<View>(null);
+  const fullscreenProgressBarRef = useRef<View>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showControls, setShowControls] = useState(true);
+  const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [selectedVideo] = useState(() => {
     const randomIndex = Math.floor(Math.random() * VIDEO_SOURCES.length);
-    return VIDEO_SOURCES[0];
+    return VIDEO_SOURCES[randomIndex];
   });
 
   const {
@@ -42,7 +47,7 @@ export const useDetailsCountry = ({ code }: Props) => {
     };
   }, [code, fetchSingleCountryByCode, resetSingleCountry]);
 
-  // MM:SS - Manejo seguro de NaN e Infinity
+  // MM:SS -  Safe handling of NaN and Infinity
   const formatTime = (seconds: number) => {
     if (!seconds || !isFinite(seconds)) {
       return '00:00';
@@ -60,7 +65,6 @@ export const useDetailsCountry = ({ code }: Props) => {
 
   const handleLoad = (data: OnLoadData) => {
     console.log('Video loaded:', data.duration);
-    // Validación de duración
     if (data.duration && isFinite(data.duration)) {
       setDuration(data.duration);
     }
@@ -69,7 +73,6 @@ export const useDetailsCountry = ({ code }: Props) => {
   };
 
   const handleProgress = (data: OnProgressData) => {
-    // Solo actualizar si no estamos haciendo seek
     if (!isSeeking && data.currentTime && isFinite(data.currentTime)) {
       setCurrentTime(data.currentTime);
     }
@@ -84,13 +87,11 @@ export const useDetailsCountry = ({ code }: Props) => {
   };
 
   const handleSeek = (progress: number) => {
-    // Validar que tenemos una duración válida antes de hacer seek
     if (!duration || !isFinite(duration) || duration <= 0) {
       console.log('Cannot seek: invalid duration');
       return;
     }
 
-    // Asegurar que el progress esté entre 0 y 1
     const clampedProgress = Math.max(0, Math.min(1, progress));
     const seekTime = duration * clampedProgress;
 
@@ -103,16 +104,12 @@ export const useDetailsCountry = ({ code }: Props) => {
     );
 
     if (videoRef.current && isFinite(seekTime)) {
-      // Marcar que estamos haciendo seek
       setIsSeeking(true);
-
-      // Actualizar el tiempo inmediatamente para feedback visual
+      // Update the time immediately for visual feedback
       setCurrentTime(seekTime);
-
-      // Realizar el seek
+      // do Seek
       videoRef.current.seek(seekTime);
-
-      // Después de un breve delay, permitir actualizaciones de progreso nuevamente
+      // UPDATE: with delay
       setTimeout(() => {
         setIsSeeking(false);
       }, 500);
@@ -129,8 +126,80 @@ export const useDetailsCountry = ({ code }: Props) => {
       ? (currentTime / duration) * 100
       : 0;
 
+  // Auto-hide controls after 3 seconds
+  const resetControlsTimeout = () => {
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current);
+    }
+
+    setShowControls(true);
+
+    if (isPlaying && !isBuffering && !isSeeking) {
+      controlsTimeoutRef.current = setTimeout(() => {
+        setShowControls(false);
+      }, 3000);
+    }
+  };
+
+  useEffect(() => {
+    resetControlsTimeout();
+
+    return () => {
+      if (controlsTimeoutRef.current) {
+        clearTimeout(controlsTimeoutRef.current);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPlaying, isBuffering, isSeeking]);
+
+  // Show controls when the video is paused or buffering
+  useEffect(() => {
+    if (!isPlaying || isBuffering || isSeeking) {
+      setShowControls(true);
+      if (controlsTimeoutRef.current) {
+        clearTimeout(controlsTimeoutRef.current);
+      }
+    }
+  }, [isPlaying, isBuffering, isSeeking]);
+
+  const handleProgressBarPress = (event: any) => {
+    const ref = isFullscreen ? fullscreenProgressBarRef : progressBarRef;
+    if (!ref.current) return;
+
+    ref.current.measure((_x, _y, width, _height, _pageX, _pageY) => {
+      const { locationX } = event.nativeEvent;
+      const progress = Math.max(0, Math.min(1, locationX / width));
+      console.log(
+        'Touch at:',
+        locationX,
+        'Width:',
+        width,
+        'Progress:',
+        progress,
+      );
+      handleSeek(progress);
+      resetControlsTimeout();
+    });
+  };
+
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+    resetControlsTimeout();
+  };
+
+  const handleVideoPress = () => {
+    if (showControls) {
+      handlePlayPause();
+    }
+    resetControlsTimeout();
+  };
+
+  const handleScreenTouch = () => {
+    resetControlsTimeout();
+  };
+
   return {
-    //state
+    // state
     singleCountry,
     isLoading,
     isBuffering,
@@ -141,7 +210,11 @@ export const useDetailsCountry = ({ code }: Props) => {
     selectedVideo,
     videoRef,
     isSeeking,
-    //handlers
+    isFullscreen,
+    showControls,
+    progressBarRef,
+    fullscreenProgressBarRef,
+    //functions
     formatTime,
     handlePlayPause,
     handleLoad,
@@ -149,5 +222,10 @@ export const useDetailsCountry = ({ code }: Props) => {
     handleBuffer,
     handleSeek,
     handleSeekComplete,
+    handleProgressBarPress,
+    toggleFullscreen,
+    handleVideoPress,
+    handleScreenTouch,
+    resetControlsTimeout,
   };
 };
