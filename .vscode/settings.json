@@ -1,0 +1,11 @@
+{
+  "exportall.config.folderListener": [
+    "/src/features/country/components",
+    "/src/shared/components",
+    "/src/shared/hooks",
+    "/src/shared",
+    "/src/shared/utils/constants",
+    "/src/shared/utils",
+    "/src/features/country/hooks"
+  ]
+}
