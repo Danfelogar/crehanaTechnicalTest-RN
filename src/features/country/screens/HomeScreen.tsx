@@ -83,7 +83,6 @@ const styles = StyleSheet.create({
     shadowRadius: 2.5,
     elevation: 4,
     paddingTop: 2,
-    paddingHorizontal: 16,
     backgroundColor: colors.background,
   },
   flatListContent: {

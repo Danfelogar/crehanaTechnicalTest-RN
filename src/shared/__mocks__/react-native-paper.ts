@@ -1,0 +1,25 @@
+module.exports = {
+  Provider: ({ children }: { children: any }) => children,
+  DefaultTheme: {},
+  DarkTheme: {},
+  MD3LightTheme: {},
+  MD3DarkTheme: {},
+  TextInput: 'TextInput',
+  Button: 'Button',
+  Card: 'Card',
+  Title: 'Title',
+  Paragraph: 'Paragraph',
+  List: {
+    Item: 'List.Item',
+    Icon: 'List.Icon',
+  },
+  IconButton: 'IconButton',
+  FAB: 'FAB',
+  Portal: 'Portal',
+  Dialog: 'Dialog',
+  Appbar: {
+    Header: 'Appbar.Header',
+    Content: 'Appbar.Content',
+  },
+  useTheme: () => ({}),
+};
