@@ -9,7 +9,7 @@ import {
 } from '../../../features';
 import { CACHE_DURATION } from '@env';
 
-const INITIAL_STATE: CountriesWithoutActions = {
+export const INITIAL_STATE: CountriesWithoutActions = {
   countries: [],
   singleCountry: null,
   continents: [],

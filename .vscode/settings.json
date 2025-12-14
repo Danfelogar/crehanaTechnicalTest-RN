@@ -6,6 +6,16 @@
     "/src/shared",
     "/src/shared/utils/constants",
     "/src/shared/utils",
-    "/src/features/country/hooks"
+    "/src/features/country/hooks",
+    "/src/shared/__mocks__",
+    "/src/shared/__mocks__/store",
+    "/src/shared/__mocks__/graphql"
+  ],
+  "exportall.config.relExclusion": [
+    "/src/shared/__mocks__/globalMocks.ts",
+    "/src/shared/__mocks__/env.ts",
+    "/src/shared/__mocks__/react-native-paper.ts",
+    "/src/shared/__mocks__/react-native.ts",
+    "/src/shared/__mocks__"
   ]
 }

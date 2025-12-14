@@ -1,7 +1,7 @@
-import { SetContextLink } from "@apollo/client/link/context";
+import { SetContextLink } from '@apollo/client/link/context';
 
 export const authHttpLink = new SetContextLink(
-  async (prevContext, operation) => {
+  async (prevContext, _operation) => {
     //TODO: extract token or whatever auth mechanism from mmkv
     // const token = ....
     const timestamp = Date.now();
@@ -10,8 +10,8 @@ export const authHttpLink = new SetContextLink(
       headers: {
         ...prevContext.headers,
         // authorization: token ? `Bearer ${token}` : "",
-        "x-timestamp": timestamp.toString(),
+        'x-timestamp': timestamp.toString(),
       },
     };
-  }
+  },
 );
